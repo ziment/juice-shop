@@ -65,3 +65,7 @@ config/*.yml
 
 # System Files
 .DS_Store
+
+# private keys
+private_keys/**
+!private_keys/example.key
