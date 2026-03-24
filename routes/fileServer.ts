@@ -11,6 +11,8 @@ import * as security from '../lib/insecurity'
 import { challenges } from '../data/datacache'
 import * as challengeUtils from '../lib/challengeUtils'
 
+const FTP_ROOT = path.resolve('ftp')
+
 export function servePublicFiles () {
   return ({ params, query }: Request, res: Response, next: NextFunction) => {
     const file = params.file
@@ -27,10 +29,14 @@ export function servePublicFiles () {
     if (file && (endsWithAllowlistedFileType(file) || (file === 'incident-support.kdbx'))) {
       file = security.cutOffPoisonNullByte(file)
 
-      challengeUtils.solveIf(challenges.directoryListingChallenge, () => { return file.toLowerCase() === 'acquisitions.md' })
-      verifySuccessfulPoisonNullByteExploit(file)
+      const resolved = path.resolve(FTP_ROOT, file)
+      if (!resolved.startsWith(FTP_ROOT + path.sep)) {
+        res.status(403)
+        next(new Error('Invalid file path!'))
+        return
+      }
 
-      res.sendFile(path.resolve('ftp/', file))
+      res.sendFile(file, { root: FTP_ROOT })
     } else {
       res.status(403)
       next(new Error('Only .md and .pdf files are allowed!'))
